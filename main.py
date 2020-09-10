@@ -1,32 +1,58 @@
 #!/usr/bin/env python
 
-import asyncio
-import json
-import websockets
+from kivy.app import App
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.graphics import Color, Rectangle
 
-code = 'WWSU'
+import subprocess
 
-async def accept_clients(websocket, path):
-    # name = await websocket.recv()
-    # print(f"< {name}")
+# TODO: Add a basic border color and border width
+class ColoredLabel(Label):
+    def __init__(self, background_color=(1, 1, 1, 1), *args, **kwargs):
+        super(ColoredLabel, self).__init__(*args, **kwargs)
+        
+        self.background_color = background_color
 
-    # greeting = f"Hello {name}!"
+    def on_size(self, *args):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            Color(*self.background_color)
+            Rectangle(pos=self.pos, size=self.size)
+            self.text_size = self.size
 
-    # await websocket.send(greeting)
-    # print(f"> {greeting}")
-    await websocket.send(json.dumps({'message': 'Enter 4 digit key', 'message_id': 0}))
-    client_code = json.loads(await websocket.recv())
+class FortuneGrid(GridLayout):
+    def __init__(self, **kwargs):
+        super(FortuneGrid, self).__init__(**kwargs)
 
-    if 'code' in client_code.keys() and client_code['code'] == code:
-        await websocket.send(json.dumps({'message': 'Connection accepted', 'code': 1}))
+        # Create the lables that will be used by the game
+        self.cols = 2
+        self.rows = 2
 
-        while True:
-            await websocket.send(json.dumps({'message': 'ping', 'message_id': 2}))
-            await asyncio.sleep(1)
-    else:
-        await websocket.send(json.dumps({'message': 'nope, get outta here', 'message_id': -1}))
+        # subprocess.run('fortune', capture_output=True).stdout.decode('utf-8')
+        shared_label_args = {
+            'outline_color':(0, 0, 0, 1),
+            'outline_width': 3,
+            'halign': 'center',
+            'valign': 'center',
+            'font_size': '24sp'
+        } 
+        
+        self._green_label = ColoredLabel(text=subprocess.run(['fortune', '-s'], capture_output=True).stdout.decode('utf-8'), background_color=(0, 1, 0, 1), **shared_label_args)
+        self._red_label = ColoredLabel(text='0123456789'*100, background_color=(1, 0, 0, 1), **shared_label_args)
+        self._yellow_label = ColoredLabel(text='Yellow label', background_color=(1, 1, 0, 1), **shared_label_args)
+        self._blue_label = ColoredLabel(text='Blue label', background_color=(0, 0, 1, 1), **shared_label_args)
 
-start_server = websockets.serve(hello, 'localhost', 1337)
+        self.lables = (self._green_label, self._red_label, self._yellow_label, self._blue_label)
 
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+        # Add the labels to the display
+        for label in self.lables:
+            self.add_widget(label)
+
+class GPTFortuneApp(App):
+    def build(self):
+        return FortuneGrid()
+
+if __name__ == '__main__':
+    GPTFortuneApp().run()
+    print("hello")
