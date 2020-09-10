@@ -10,6 +10,7 @@ from kivy.clock import Clock
 from fortuneGenerator import FortuneGenerator
 from functools import partial
 from random import shuffle
+from time import sleep
 
 # TODO: Add a basic border color and border width
 class ColoredLabel(Label):
@@ -18,12 +19,15 @@ class ColoredLabel(Label):
         
         self.background_color = background_color
 
+
     def on_size(self, *args):
+        self.force_redraw()
+
+    def force_redraw(self):
         self.canvas.before.clear()
         with self.canvas.before:
             Color(*self.background_color)
             Rectangle(pos=self.pos, size=self.size)
-            self.text_size = self.size
 
 class FortuneGrid(GridLayout):
     def __init__(self, **kwargs):
@@ -55,13 +59,25 @@ class FortuneGrid(GridLayout):
         
     def reset_labels(self, dt, fortune_generator=None):
         if fortune_generator is not None:
-            text = [fortune_generator.get_human(), fortune_generator.get_computer(), fortune_generator.get_computer(), fortune_generator.get_computer()]
+            text = [
+                (fortune_generator.get_human(), True), 
+                (fortune_generator.get_computer(), False), 
+                (fortune_generator.get_computer(), False), 
+                (fortune_generator.get_computer(), False)
+            ]
+
             shuffle(text)
 
             print(text)
 
             for i in range(4):
-                self.labels[i].text = text[i]
+                self.labels[i].text = text[i][0]
+                self.labels[i].outline_width = 3
+
+            for i in range(4):
+                self.labels[i].outline_width = 3 if text[i][1] else 1
+            
+
         print('hello')
 
 
